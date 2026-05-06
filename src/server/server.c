@@ -177,12 +177,21 @@ int main (int argc,char **argv)
 	}
 
     /*SOCKET初始化*/ //？？还需要了解复习UDP通信的原理，比如服务器（主动）端和客户（被动）端的通信流程等 (老师为什么说客户端不可以省略bind，而服务器端可以省略bind)
-	socket_init()
-    /*获取频道信息*/
+	socket_init();
 
-    /*创建节目单线程*/
+    /*获取频道信息(应该从medialib中获取)*/
 
-    /*创建频道线程*/
+	struct medialib_entry_st *list;
+	int list_size;
+	int err;
+	err = medialib_getchalist(&list,&list_size);
+	if (){
+
+		
+	}
+    /*创建节目单线程(thr_list)*/
+
+    /*创建频道线程(thr_channel)*/
 
     //在干嘛？
     while(1)
