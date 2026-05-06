@@ -9,6 +9,7 @@ enum{
     RUN_FRONTDESK = 2//作为前台运行
 };
 
+//默认配置文件结构体
 struct server_conf_st
 {
     char* rcvport;

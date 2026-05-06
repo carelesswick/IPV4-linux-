@@ -8,9 +8,11 @@
 #include <syslog.h>
 #include <string.h>
 #include <errno.h>
-
-
-
+#include <sys/types.h>          
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <net/if.h>
 
 
 #include "server_conf.h"
@@ -63,7 +65,7 @@ static int daemonize(void)
 	
 	setsid();//创建守护进程
 	chdir("/");//将脱离任务终端的守护进程指定到一个合适的路径上去
-	umask(0);
+	umask(0);//umask将自身 umask 修改为 0，也就是创建文件的基础权限为 0777，方便后续基于此继续修改权限
 	return 0;
 
 }
@@ -74,6 +76,28 @@ static void daemon_exit(int s)
 	closelog();//关闭日志
 
 	exit(0);
+}
+
+static socket_init(void)
+{
+	int sever_sd;
+	struct ip_mreqn mreq;
+	sever_sd = socket(AF_INET,SOCK_DGRAM,0);
+	if (sever_sd < 0){
+		syslog(LOG_ERR,"socket():%s",strerror(errno));
+		exit(-1);
+	}
+
+	inet_pton(AF_INET,server_conf.mulgroup,&mreq.imr_multiaddr);//inet_pton是直接将字符串转换为二进制网络字节序
+	inet_pton(AF_INET,"0.0.0.0",mreq.imr_address);
+	mreq.imr_ifindex = if_nametoindex(server_conf.infcname);//网卡转索引号
+
+	if (setsockopt(sever_sd,IPPROTO_IP,IP_MULTICAST_IF,&mreq,sizeof(mreq)) < 0){
+		syslog(LOG_ERR,"setsockopt(IP_MULTICAST_IF):%s",strerror(errno));
+		exit(-1);
+	}
+	//bind()省略
+
 }
 
 int main (int argc,char **argv)
@@ -87,6 +111,9 @@ int main (int argc,char **argv)
 	sigaddset(&sa.sa_mask,SIGINT);//将下面三个信号添加到sa_mask中
 	sigaddset(&sa.sa_mask,SIGQUIT);
 	sigaddset(&sa.sa_mask,SIGTERM);
+	/*这里的 sa.sa_mask 意思是：
+	当 daemon_exit 正在执行时，如果这时候又收到了 SIGINT, SIGQUIT, SIGTERM，
+	系统会先把它们阻塞住，等 daemon_exit 执行完了再处理。这防止了处理函数被其他信号中断。*/
 
 	//当这些信号来临时，会执行daemon_exit函数安全退出。
 	sigaction(SIGTERM,&sa,NULL);// 处理终止信号(15)
@@ -96,7 +123,7 @@ int main (int argc,char **argv)
 	//系统日志
 	openlog("netradio",LOG_PID | LOG_PERROR,LOG_DAEMON);//打开日志文件
 
-
+	//该结构体用来存储默认的配置信息
 	struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
 										.mulgroup = DEFAULT_MGROUP,\
 										.media_dir = DEFAULT_MEDIADIR,\
@@ -104,7 +131,7 @@ int main (int argc,char **argv)
 										.runmode = RUN_DAEMON};
    
 	while(1){
-		opt = getopt(argc,argv,"M:P:FD:I:H");//因为每次getopt每次只解析一个参数，所以呢要循环解析
+		opt = getopt(argc,argv,"M:P:FD:I:H");//因为每次getopt每次只解析一个参数，所以需要循环解析
 		if (opt < 0)
 			break;//解析到-1说明解析完毕
 		switch (opt)
@@ -116,7 +143,7 @@ int main (int argc,char **argv)
 				server_conf.rcvport = optarg;
 				break;
 			case 'F':
-				server_conf.runmode = RUN_FRONTDESK;//默认是后台守护进程，现在呢改为前台
+				server_conf.runmode = RUN_FRONTDESK;//默认是后台守护进程，传递F参数就表示改为前台运行
 				break;
 			case 'D':
 				server_conf.media_dir = optarg;
@@ -134,7 +161,7 @@ int main (int argc,char **argv)
 		}
 	}
     
-    /*当前进程作为守护进程（需要查阅资料）*/
+    /*如果当前进程作为守护进程*/
 	if (server_conf.runmode == RUN_DAEMON){
 		if (daemonize() < 0){
 			exit(-1);//
@@ -149,8 +176,8 @@ int main (int argc,char **argv)
 		exit(-1);
 	}
 
-    /*SOCKET初始化*/
-
+    /*SOCKET初始化*/ //？？还需要了解复习UDP通信的原理，比如服务器（主动）端和客户（被动）端的通信流程等 (老师为什么说客户端不可以省略bind，而服务器端可以省略bind)
+	socket_init()
     /*获取频道信息*/
 
     /*创建节目单线程*/
