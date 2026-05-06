@@ -187,12 +187,19 @@ int main (int argc,char **argv)
 	err = medialib_getchalist(&list,&list_size);
 	if (){
 
-		
+
 	}
     /*创建节目单线程(thr_list)*/
+	thr_list_create(list,list_size);
+	/*if erro*/
 
     /*创建频道线程(thr_channel)*/
-
+	int i;
+	for(i = 0;i < list_size;i++){
+		thr_channel_create(list+i);
+		/*if erro*/
+	}
+	syslog(LOG_DEBUG,"%d channel threads created.",i);
     //在干嘛？
     while(1)
         pause();
