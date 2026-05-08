@@ -12,7 +12,7 @@ int mytbf_fetchtoken(mytbf_t *,int );
 
 int mytbf_returntocken(mytbf_t *,int);
 
-int mttbf_destroy(mytbf_t *);
+int mttbf_destroy(mytbf_t *ptr);
 
 
 #endif
