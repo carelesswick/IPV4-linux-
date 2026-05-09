@@ -1,2 +1,2 @@
-CFLAGS+= -I../include/proto.h -pthread
+CFLAGS+= -I../include -pthread
 LDFLAGS+= -pthread

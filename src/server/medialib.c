@@ -11,7 +11,7 @@ struct channel_context_st
     chnid_t chnid;
     char *desc;
     glob_t mp3glob;//结构体？
-    int pos;下标表示歌曲的位置
+    int pos;//下标表示歌曲的位置
     int fd;
     off_t offset;//什么东西？
     mytbf_t *tbf;//流量控制(多线程并发版)
