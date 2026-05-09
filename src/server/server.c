@@ -180,7 +180,6 @@ int main (int argc,char **argv)
 	socket_init();
 
     /*获取频道信息(应该从medialib中获取)*/
-
 	struct medialib_entry_st *list;
 	int list_size;
 	int err;
