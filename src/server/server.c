@@ -13,7 +13,7 @@
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <net/if.h>
-
+#include <arpa/inet.h>
 
 #include "server_conf.h"
 #include "medialib.h"
@@ -22,6 +22,14 @@
 #include "thr_list.h"
 #include <proto.h>
 
+struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
+										.mulgroup = DEFAULT_MGROUP,\
+										.media_dir = DEFAULT_MEDIADIR,\
+										.infcname = DEFAULT_INFCNAME,\
+										.runmode = RUN_DAEMON};
+
+int sever_sd;
+struct sockaddr_in sndaddr;//发送方的地址（man 7 ip）
 static void printfhelp()
 {
 	printf("-M	指定接收端口\n\
@@ -78,9 +86,8 @@ static void daemon_exit(int s)
 	exit(0);
 }
 
-static socket_init(void)
+static int socket_init(void)
 {
-	int sever_sd;
 	struct ip_mreqn mreq;
 	sever_sd = socket(AF_INET,SOCK_DGRAM,0);
 	if (sever_sd < 0){
@@ -97,7 +104,10 @@ static socket_init(void)
 		exit(-1);
 	}
 	//bind()省略
-
+	sndaddr.sin_family = AF_INET;
+	sndaddr.sin_port = htons(atoi((server_conf.rcvport)));//主机字节序转网络字节序（字符串转整数）
+	inet_pton(AF_INET,server_conf.mulgroup,sndaddr.sin_addr.s_addr);//字符串IP→ 网络字节序二进制IP
+	return 0;
 }
 
 int main (int argc,char **argv)
@@ -124,11 +134,11 @@ int main (int argc,char **argv)
 	openlog("netradio",LOG_PID | LOG_PERROR,LOG_DAEMON);//打开日志文件
 
 	//该结构体用来存储默认的配置信息
-	struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
-										.mulgroup = DEFAULT_MGROUP,\
-										.media_dir = DEFAULT_MEDIADIR,\
-										.infcname = DEFAULT_INFCNAME,\
-										.runmode = RUN_DAEMON};
+	// struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
+	// 									.mulgroup = DEFAULT_MGROUP,\
+	// 									.media_dir = DEFAULT_MEDIADIR,\
+	// 									.infcname = DEFAULT_INFCNAME,\
+	// 									.runmode = RUN_DAEMON};
    
 	while(1){
 		opt = getopt(argc,argv,"M:P:FD:I:H");//因为每次getopt每次只解析一个参数，所以需要循环解析

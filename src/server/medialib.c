@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <glob.h>
-
+#include <syslog.h>
 
 
 
@@ -37,17 +37,28 @@ int medialib_getchalist(struct medialib_entry_st **result,int *resnum)
     int num = 0;
     char path[PATHSIZE];
     glob_t globres;
+    struct medialib_entry_st *ptr;
+    struct channel_context_st *res;
+
     //初始化
     for (i = 0;i<MAXCHNID+1;i++){
         channel[i].chnid = -1;//写成-1代表当前频道未启用
     }
-    snprintf(path,PATHSIZE,"%s/*",server_conf.media_dir);
+    snprintf(path,PATHSIZE,"%s/*",server_conf.media_dir);//？在干嘛？
     if (glob(path,0,NULL,&globres)){//解析目录存放到globres结构体中
         return -1;
     }
+
+    ptr = malloc(sizeof(struct medialib_entry_st) * globres.gl_pathc);
+    if (ptr ==NULL){//malloc()在出错时会返回NULL
+        syslog(LOG_ERR,"malloc() error.");
+        exit(-1);
+    }
+    
+
     //遍历解析的结构体
     for (i = 0;i < globres.gl_pathc;i++){
-        //globres.gl_pathv[i] -> "/media/ch1"
+        //globres.gl_pathv[i] -> "/media/ch1"(其实是指向"/media/ch1"首个字符的指针)
         path2entry(globres.gl_pathv[i]);
         num++;
     }
