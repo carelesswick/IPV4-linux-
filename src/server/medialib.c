@@ -4,8 +4,11 @@
 #include <stdlib.h>
 #include <glob.h>
 #include <syslog.h>
-
-
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #include "../include/proto.h"
 #include "medialib.h"
@@ -14,7 +17,7 @@
 
 
 #define PATHSIZE 1024
-
+#define LINEBUFSIZE 1024
 
 
 struct channel_context_st
@@ -30,7 +33,46 @@ struct channel_context_st
 }
 
 static struct channel_context_st channel [MAXCHNID+1];
+static struct channel_context_st *path2entry(const char*path)
+{
+    //path/desc.text    path/*.mp3
+    char pathstr[PATHSIZE];
+    char linebuf[LINEBUFSIZE];
+    FILE *fp;
+    struct channel_context_st *me;
+    static chnid_t curr_id = MINCHNID;
 
+    strcpy(pathstr,path,PATHSIZE);
+    strcat(pathstr,"/desc.text",PATHSIZE);
+
+    fp = fopen(pathstr,"r");
+    if (fp ==NULL){
+        syslog(LOG_INFO,"%s is not a channel dir (Can't find desc.text)",path);
+        return NULL;
+    }
+
+    if (fgets(linebuf,LINEBUFSIZE,fp) == NULL){
+        syslog(LOG_INFO,"%s is not a channel dir (Can't find desc.text)",path);
+        fclose(fp);
+        return NULL;
+    }
+
+    fclose(fp);
+
+    me = malloc(sizeof(*me));
+    if (me == NULL){
+        syslog(LOG_ERR,"malloc():%s\n",strerror(errno));
+        return NULL;
+    }
+    me->pos = 0;
+    me->offset = 0;
+    me->fd = open(me->mp3glob.gl_pathv[me->pos],O_RDONLY);
+    if (me->fd < 0){
+        syslog(LOG_WARNING,"%s is failed.",me->mp3glob.gl_pathv[]);
+        free(me);
+    }
+
+}
 int medialib_getchalist(struct medialib_entry_st **result,int *resnum)
 {
     int i;

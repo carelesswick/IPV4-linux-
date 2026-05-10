@@ -194,19 +194,24 @@ int main (int argc,char **argv)
 	int list_size;
 	int err;
 	err = medialib_getchalist(&list,&list_size);
-	if (){
-
-
+	if (err){
+		syslog(LOG_ERR,"medialib_getchalist():%s.",strerror(errno));
+		exit(-1);
 	}
     /*创建节目单线程(thr_list)*/
-	thr_list_create(list,list_size);
-	/*if erro*/
+	err = thr_list_create(list,list_size);
+	if (err){
+		exit(-1);
+	}
 
     /*创建频道线程(thr_channel)*/
 	int i;
 	for(i = 0;i < list_size;i++){
-		thr_channel_create(list+i);
-		/*if erro*/
+		err = thr_channel_create(list+i);
+		if (err){
+			fprintf(stderr,"thr_channel_create():%s\n",strerror(err));
+			exit(-1);
+		}
 	}
 	syslog(LOG_DEBUG,"%d channel threads created.",i);
     //在干嘛？

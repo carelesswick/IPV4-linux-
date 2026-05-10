@@ -10,6 +10,7 @@ struct medialib_entry_st
 //获取节目单函数
 int medialib_getchalist(struct medialib_entry_st **,int *);
 
+
 //谁申请、谁释放、谁打开、谁关闭
 int medialib_freechalist(struct medialib_entry_st *);
 
