@@ -30,12 +30,13 @@ struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
 
 int sever_sd;
 struct sockaddr_in sndaddr;//发送方的地址（man 7 ip）
+static struct medialib_entry_st *list;
 static void printfhelp()
 {
 	printf("-M	指定接收端口\n\
             -P  指定多播组\n\
-            -F  指定播放器\n\
-            -D  显示帮助\n\
+            -F  指定前台运行\n\
+            -D  指定媒体目录\n\
 			-I 	指定网络设设备\n\
 			-H	显示帮助\n");
 
@@ -80,7 +81,11 @@ static int daemonize(void)
 
 static void daemon_exit(int s)
 {
-	/*待补充*/
+	thr_list_destroy();
+	thr_channel_destroyall();
+	medialib_freechalist(list);
+
+	syslog(LOG_WARNING,"signal-%d caught,exit now.",s);
 	closelog();//关闭日志
 
 	exit(0);
@@ -96,7 +101,7 @@ static int socket_init(void)
 	}
 
 	inet_pton(AF_INET,server_conf.mulgroup,&mreq.imr_multiaddr);//inet_pton是直接将字符串转换为二进制网络字节序
-	inet_pton(AF_INET,"0.0.0.0",mreq.imr_address);
+	inet_pton(AF_INET,"0.0.0.0",&mreq.imr_address);
 	mreq.imr_ifindex = if_nametoindex(server_conf.infcname);//网卡转索引号
 
 	if (setsockopt(sever_sd,IPPROTO_IP,IP_MULTICAST_IF,&mreq,sizeof(mreq)) < 0){
@@ -106,7 +111,7 @@ static int socket_init(void)
 	//bind()省略
 	sndaddr.sin_family = AF_INET;
 	sndaddr.sin_port = htons(atoi((server_conf.rcvport)));//主机字节序转网络字节序（字符串转整数）
-	inet_pton(AF_INET,server_conf.mulgroup,sndaddr.sin_addr.s_addr);//字符串IP→ 网络字节序二进制IP
+	inet_pton(AF_INET,server_conf.mulgroup,&sndaddr.sin_addr.s_addr);//字符串IP→ 网络字节序二进制IP
 	return 0;
 }
 
@@ -128,17 +133,17 @@ int main (int argc,char **argv)
 	//当这些信号来临时，会执行daemon_exit函数安全退出。
 	sigaction(SIGTERM,&sa,NULL);// 处理终止信号(15)
 	sigaction(SIGINT,&sa,NULL);// 处理中断信号(2)，如Ctrl+C
-	sigaction(SIGQUIT,&sa,NULL);// 处理退出信号(3)，如Ctrl+\
+	sigaction(SIGQUIT,&sa,NULL);// 处理退出信号(3)
 
 	//系统日志
 	openlog("netradio",LOG_PID | LOG_PERROR,LOG_DAEMON);//打开日志文件
 
-	//该结构体用来存储默认的配置信息
-	// struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
-	// 									.mulgroup = DEFAULT_MGROUP,\
-	// 									.media_dir = DEFAULT_MEDIADIR,\
-	// 									.infcname = DEFAULT_INFCNAME,\
-	// 									.runmode = RUN_DAEMON};
+	/*该结构体用来存储默认的配置信息
+	struct server_conf_st server_conf = {.rcvport = DEFAULT_RCVPORT,\
+										.mulgroup = DEFAULT_MGROUP,\
+										.media_dir = DEFAULT_MEDIADIR,\
+										.infcname = DEFAULT_INFCNAME,\
+										.runmode = RUN_DAEMON};*/
    
 	while(1){
 		opt = getopt(argc,argv,"M:P:FD:I:H");//因为每次getopt每次只解析一个参数，所以需要循环解析
@@ -147,10 +152,10 @@ int main (int argc,char **argv)
 		switch (opt)
 		{
 			case 'M':
-				server_conf.mulgroup = optarg;
+				server_conf.rcvport = optarg;
 				break;
 			case 'P':
-				server_conf.rcvport = optarg;
+				server_conf.mulgroup = optarg;
 				break;
 			case 'F':
 				server_conf.runmode = RUN_FRONTDESK;//默认是后台守护进程，传递F参数就表示改为前台运行
@@ -190,7 +195,7 @@ int main (int argc,char **argv)
 	socket_init();
 
     /*获取频道信息(应该从medialib中获取)*/
-	struct medialib_entry_st *list;
+	
 	int list_size;
 	int err;
 	err = medialib_getchalist(&list,&list_size);

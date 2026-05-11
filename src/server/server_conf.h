@@ -3,6 +3,7 @@
 
 #define DEFAULT_MEDIADIR    "/var/media/"
 #define DEFAULT_INFCNAME    "ens33"//ens33
+#define MP3_BITRATE         128000
 
 enum{
     RUN_DAEMON = 1,//作为守护进程
