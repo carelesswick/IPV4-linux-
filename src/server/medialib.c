@@ -131,8 +131,9 @@ int medialib_getchalist(struct medialib_entry_st **result,int *resnum)
             memcpy(channel+res->chnid,res,sizeof(*res));
             ptr[num].chnid = res->chnid;
             ptr[num].desc = strdup(res->desc);
+            num++;
         }
-        num++;//这里出错了？我看老师是这样写的
+        
     }
     *result = realloc(ptr,sizeof(struct medialib_entry_st) * num);//这个和malloc一样吗？
     if (*result == NULL){
