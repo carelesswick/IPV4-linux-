@@ -37,7 +37,7 @@ struct channel_context_st
 static struct channel_context_st channel [MAXCHNID+1];
 static struct channel_context_st *path2entry(const char*path)
 {
-    //path/desc.text    path/*.mp3
+    //path/desc.txt    path/*.mp3
     char pathstr[PATHSIZE];
     char linebuf[LINEBUFSIZE];
     FILE *fp;
@@ -45,16 +45,16 @@ static struct channel_context_st *path2entry(const char*path)
     static chnid_t curr_id = MINCHNID;
 
     strncpy(pathstr,path,PATHSIZE);
-    strncat(pathstr,"/desc.text",PATHSIZE);
+    strncat(pathstr,"/desc.txt",PATHSIZE);
 
     fp = fopen(pathstr,"r");
     if (fp ==NULL){
-        syslog(LOG_INFO,"%s is not a channel dir (Can't find desc.text)",path);
+        syslog(LOG_INFO,"%s is not a channel dir (Can't find desc.txt)",path);
         return NULL;
     }
 
     if (fgets(linebuf,LINEBUFSIZE,fp) == NULL){
-        syslog(LOG_INFO,"%s is not a channel dir (Can't find desc.text)",path);
+        syslog(LOG_INFO,"%s is not a channel dir (Can't find desc.txt)",path);
         fclose(fp);
         return NULL;
     }
@@ -134,6 +134,10 @@ int medialib_getchalist(struct medialib_entry_st **result,int *resnum)
             num++;
         }
         
+    }
+    if(num == 0){
+        syslog(LOG_ERR,"NO a valid channles in %s.",server_conf.media_dir);
+        return -1;
     }
     *result = realloc(ptr,sizeof(struct medialib_entry_st) * num);//这个和malloc一样吗？
     if (*result == NULL){

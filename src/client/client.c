@@ -86,7 +86,8 @@ int main(int argc,char** argv)
     struct sockaddr_in serveraddr;//父进程rcvfrom()函数用来存放节目单包的IP+端口
     struct sockaddr_in remoteaddr;//父进程rcvfrom()函数用来存放Sever的IP+端口
     
-    socklen_t serveraddr_len,remoteaddr_len;
+    socklen_t serveraddr_len = sizeof(serveraddr);
+    socklen_t remoteaddr_len = sizeof(remoteaddr);
 /////////////////////////////////////////////////////////////////////////
     // struct sockaddr_in {
     //            sa_family_t    sin_family; /* 地址族，固定填 AF_INET */
@@ -141,7 +142,7 @@ int main(int argc,char** argv)
     //int inet_pton(int af, const char *src, void *dst);
     inet_pton(AF_INET,client_conf.mulgroup,&mreq.imr_multiaddr);
     inet_pton(AF_INET,"0.0.0.0",&mreq.imr_address);
-    mreq.imr_ifindex = if_nametoindex("eth0");
+    mreq.imr_ifindex = if_nametoindex("eth33");
 
     if ((setsockopt(sd,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq))) < 0){
         perror("setsocketopt is wrong");
@@ -236,6 +237,7 @@ int main(int argc,char** argv)
             if (ret != 1){
                 exit(1);
             }
+            break;// 成功读取后，跳出循环继续往下执行！
         }
             
         //收频道包，发送给子进程
