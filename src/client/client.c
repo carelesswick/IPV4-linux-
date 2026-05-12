@@ -230,8 +230,9 @@ int main(int argc,char** argv)
             printf("channel: %d : %s\n",pos->chnid,pos->desc);
         }
 
-        free(msg_list);
+        free(msg_list);/////
         
+        puts("plese input chnid:");
         while(1){
             ret = scanf("%d",&chosen_id);//输入你选择的ID
             if (ret != 1){
@@ -241,7 +242,8 @@ int main(int argc,char** argv)
         }
             
         //收频道包，发送给子进程
-        
+        fprintf(stdout,"chosenid = %d\n",ret);
+
         msg_channel = malloc(MSG_CHANNEL_MAX);
         if (msg_channel == NULL){
             perror("msg_channel malloc is wrong");
