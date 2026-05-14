@@ -1,7 +1,7 @@
 #ifndef SEVER_CONF_H__
 #define SEVER_CONF_H__
 
-#define DEFAULT_MEDIADIR    "/media"
+#define DEFAULT_MEDIADIR    "/home/carelesswick/media"
 #define DEFAULT_INFCNAME    "ens33"//ens33
 #define MP3_BITRATE         128000
 
